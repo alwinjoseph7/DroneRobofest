@@ -1,15 +1,18 @@
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from pymavlink import mavutil
 import time
-import argparse  
+import argparse
+import cv2  
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--connect', default='/dev/ttyACM0')
 args = parser.parse_args()
 
+cap=cv2.VideoCapture(0)
+
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % args.connect)
 vehicle = connect(args.connect, baud=921600, wait_ready=True)
-#921600 is the baudrate that you have set in the mission plannar or qgc
 
 # Function to arm and then takeoff to a user specified altitude
 def arm_and_takeoff(aTargetAltitude):
@@ -40,16 +43,31 @@ def arm_and_takeoff(aTargetAltitude):
       break
     time.sleep(1)
 
-# Initialize the takeoff sequence to 15m
-arm_and_takeoff(5)
+def goto(dNorth, dEast, gotoFunction=vehicle.simple_goto):
+    currentLocation=vehicle.location.global_relative_frame
+    targetLocation=get_location_metres(currentLocation, dNorth, dEast)
+    targetDistance=get_distance_metres(currentLocation, targetLocation)
+    gotoFunction(targetLocation)
 
+    while vehicle.mode.name=="GUIDED": #Stop action if we are no longer in guided mode.
+        remainingDistance=get_distance_metres(vehicle.location.global_frame, targetLocation)
+        print "Distance to target: ", remainingDistance
+        if remainingDistance<=targetDistance*0.01: #Just below target, in case of undershoot.
+            print "Reached target"
+            break;
+        time.sleep(2)
+
+# Initialize the takeoff sequence to 5m
+arm_and_takeoff(5)
 print("Take off complete")
 
-# Hover for 10 seconds
-time.sleep(15)
+while True:
+  _,frame=cap.read()
+  #apriltagdetection
+  
+  if cv2.waitKey(1) & 0xFF==ord('q'):
+    break
 
 print("Now let's land")
-vehicle.mode = VehicleMode("LAND")
-
-# Close vehicle object
-vehicle.close()
+#vehicle.parameters['RTL_ALT'] = 0
+vehicle.mode = VehicleMode("RTL")
