@@ -4,6 +4,7 @@ cap=cv2.VideoCapture(0)
 while True:
     _,frame = cap.read()
     objects,_,_=cv2.QRCodeDetector().detectAndDecode(frame)
+    cv2.imshow("frame", frame)
     if objects != '':
         print("Detected")
     else:
