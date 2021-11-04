@@ -14,7 +14,7 @@ def read_cam():
             img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
             result = apriltag.Detector().detect(img_gray)
             if result:
-                print result
+                print result[0][1]
     else:
      print "camera open failed"
 
